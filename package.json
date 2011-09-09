@@ -1,0 +1,24 @@
+{ "name": "flexcache"
+, "description": "flexible cacher for async functions with switchable backends. redis/memory"
+, "version": "0.0.1"
+, "homepage": "https://github.com/poelzi/node-flexcache"
+, "author": "poelzi (http://poelzi.org)"
+, "repository": {"type": "git", "url": "git://github.com/poelzi/node-flexcache.git"}
+, "main": "flexcache.js"
+, "engines": {"node": "0.4.x"}
+, "keywords": ["cache", "async", "redis"]
+, "scripts": {
+    "preinstall": "#preinstall DO NOTHING",
+    "install": "node-waf configure build",
+    "update": "node-waf build",
+    "test": "node-waf && ./node_modules/nodeunit/bin/nodeunit test"}
+, "dependencies": {
+    "coffee-script": ">= 1.1.1",
+    "buffalo":       "0.1.x",
+    "quack-array":   "0.0.x",
+    "nodeunit":      "0.5.x",
+    "redis":         "0.6.x",
+    "async":         "0.1.x"
+}
+
+}
