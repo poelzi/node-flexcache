@@ -1,6 +1,6 @@
 { "name": "flexcache"
 , "description": "flexible cacher for async functions with switchable backends. redis/memory"
-, "version": "0.0.1"
+, "version": "0.0.5"
 , "homepage": "https://github.com/poelzi/node-flexcache"
 , "author": "poelzi (http://poelzi.org)"
 , "repository": {"type": "git", "url": "git://github.com/poelzi/node-flexcache.git"}
@@ -18,7 +18,8 @@
     "quack-array":   "0.0.x",
     "nodeunit":      "0.5.x",
     "redis":         "0.6.x",
-    "async":         "0.1.x"
+    "async":         "0.1.x",
+    "hashlib":       "https://github.com/poelzi/hashlib/tarball/master"
 }
 
 }

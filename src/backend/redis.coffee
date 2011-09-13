@@ -4,9 +4,11 @@ buffalo = require 'buffalo'
 async = require 'async'
 quack = require 'quack-array'
 
+
 class RedisBackend extends Backend
     constructor: (options) ->
         @options = options or {}
+        @options.return_buffers = true
         @client = new redis.createClient(@options.port or @options.socket, @options.host, @options)
         @ttl_bug = false
 
@@ -25,6 +27,7 @@ class RedisBackend extends Backend
 
         @client.on "connect", () =>
             @client.info (err, res) =>
+                res = res.toString()
                 for line in res.split("\r\n")
                     [key, value] = line.split(":")
                     if key == 'redis_version'

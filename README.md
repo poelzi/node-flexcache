@@ -11,18 +11,19 @@ Different Backends allows you to cover different usecases.
 ## Redis
 
 
-    Best used for preventing long and slow operations on the filesysetem. Can easily be shared accross a Cluster and is
-    very performant. TTL support of the Redis database scales down the memory usage. 
+Best used for preventing long and slow operations on the filesysetem. Can easily be shared accross a Cluster and is
+very performant. TTL support of the Redis database scales down the memory usage. 
 
 
 ## Memory (soon)
 
 
-    Caches are local only. Should only be used in a very narrow scope and be destoryed after every request. They are very
-    fast however.
+Caches are local only. Should only be used in a very narrow scope and be destoryed after every request. They are very
+fast however.
 
 
 # Installation
+
 
     npm install flexcache
 
@@ -90,17 +91,35 @@ rcached.clear("key1")
   - `hash` *function* to generate the hash or one of *'all'*, *'one'*, *'safe_one'*, *'safe_all'*. default: **safe_all**
   - `key` same as hash. default: **one**
   - `ttl` timeout in
+  - `key_prefix` prefix added before the key
 
+## get_key(args...)
 
-## cache(fnc)
+returns the key computed as they are saved
 
-Creates a cache wrapper for a async function.
+## clear(key)
 
-## cache(...).clear([key]|[args])
+clears all caches associated with one key
+
+typical use:
+
+```javascript
+fc.clear(fc.get_key(mykey))
+```
+
+Usually you are better of with using the clear(...) function of the cached function as it uses the correct hasher when the cached function
+uses a different hasher.
+
+## cache(fnc, [options])
+
+Creates a cache wrapper for a async function. Options overrides the Flexcache options.
+The returned function has special members which helps you to deal with cache consistancy:
+
+## cache(...).clear([args,...])
 
 Clears a key and all subkeys under it. Key can be direct string or the same arguments as the function.
 
-## cache(...).clear_subkey([key, subkey]|[args])
+## cache(...).clear_subkey([args,...])
 
 Clears a specific subkey under key. If key and subkey are strings, they are used directly.
 You can also pass the same arguments as the normal function and let the key and subkey be calculated by the key/hash functions.
