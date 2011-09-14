@@ -22,6 +22,7 @@ class Flexcache
             throw new Error("backend missing")
         @options = options or {}
         @options.group_prefix ?= "fc_"
+        @options.max_object_size ?= 500 * 1024
         @used_names = {}
         dset = (name, target, def) =>
             switch @options[name]
@@ -88,7 +89,8 @@ class Flexcache
                         if results[0] # error case
                             return callback.apply(null, results)
                         # cache the result
-                        @backend.set group, hash, ttl, results, (err, res) =>
+                        opt = ttl:ttl, max_object_size:@options.max_object_size
+                        @backend.set group, hash, results, opt, (err, res) =>
                             # don't care if succeeded
                             if @options.debug
                                 console.log("save cache", group, hash)

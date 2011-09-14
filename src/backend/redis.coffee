@@ -54,14 +54,18 @@ class RedisBackend extends Backend
                 return fn()
             fn null, decoded
 
-    set: (group, hash, ttl, data, fn) =>
+    set: (group, hash, data, options, fn) =>
         fn = fn
+        ttl = options.ttl
+        max_size = options.max_object_size
         try
             if ttl == -1
                 rttl = -1
             else
                 rttl = ttl/1000 or 6*60*60
             rdata = buffalo.serialize(data)
+            if max_size and rdata.length > max_size
+                return fn("to large", null)
             async.waterfall [
                 (next) =>
                     @client.ttl group, (err, res) =>

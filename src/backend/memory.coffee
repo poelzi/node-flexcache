@@ -22,7 +22,7 @@ class MemoryBackend extends Backend
             @_call(fn, "not found", null)
 
 
-    set: (key, subkey, ttl, data, fn) =>
+    set: (key, subkey, data, options, fn) =>
         @cache[key] ?= {}
 
         @cache[key][subkey] = data

@@ -124,7 +124,8 @@ fc = new Flexcache(backend, {
     group: function() { return arguments.1 },
     hash: function() { return "X" + arguments.0 },
     ttl: 60*1000,
-    prefix: "grp1",
+    group_name: "grp1",
+    max_object_size: 1 * 1024 // 1 kbyte
     });
 
 // use a special key function for this function
