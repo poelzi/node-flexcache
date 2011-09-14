@@ -167,6 +167,12 @@ gentests "TestConsistancy", (test, backend) ->
                 test.equal(run, 4, "cache was hit 4")
                 next null
         ,
+        (next) ->
+            fc.get_cache fast.get_group(99), fast.get_hash(99), (cached) ->
+                test.equal(cached[1], "waited 99", "not correct raw get_cache value")
+                test.equal(cached[2], 4, "not correct raw get_cache value")
+                next null
+        ,
         # subkey tests
         (next) ->
             fast 99, 1, got_res (err, waited, run) ->
@@ -222,7 +228,7 @@ gentests "TestConsistancy", (test, backend) ->
                 next null
         ,
         ]
-    todo = series.length - 3
+    todo = series.length - 4
     async.series series, (err) ->
         test.equal(err, null, "error thrown")
         test.equal(todo, 0, "todo is not right")

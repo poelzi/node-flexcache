@@ -56,6 +56,13 @@ class Flexcache
     get_hash: (args...) =>
         return @hash.apply(null, args)
 
+    get_cache: (group, hash, cb) =>
+        @backend.get group, hash, (err, cached) =>
+            if err
+                cb(null)
+            else
+                cb(cached)
+
     clear_group: (group, cb) =>
         @backend.clear_group group, cb
 
