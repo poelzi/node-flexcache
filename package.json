@@ -1,6 +1,6 @@
 { "name": "flexcache"
 , "description": "flexible cacher for async functions with switchable backends. redis/memory"
-, "version": "0.0.5"
+, "version": "0.0.6"
 , "homepage": "https://github.com/poelzi/node-flexcache"
 , "author": "poelzi (http://poelzi.org)"
 , "repository": {"type": "git", "url": "git://github.com/poelzi/node-flexcache.git"}

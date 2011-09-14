@@ -13,6 +13,7 @@ quack = require 'quack-array'
 hexy = require('hexy').hexy
 hashlib = require('hashlib')
 assert = require('assert')
+{ EventEmitter } = require('events')
 
   
 class Flexcache
@@ -69,48 +70,119 @@ class Flexcache
     clear_hash: (group, hash, cb) =>
         @backend.clear_hash group, hash, cb
 
+    calculate_size: (obj) ->
+        if typeof(obj) == "string" or Buffer.isBuffer(obj)
+            return obj.length
+        else if typeof(obj) == "object"
+            rv = 0
+            for own value, key of obj
+                rv += calculate_size(value)
+                rv += calculate_size(key)
+            return rv
+        else if obj.length
+            return obj.length
+        return 0
+
     cache: (fn, loptions = {}) =>
         hasher = loptions.hash or @hash
         grouper = loptions.group or @group
         ttl = loptions.ttl or @options.ttl
         hash_name = loptions.name or fn.name
+
+        # test validity of options
         if not hash_name
             throw new Error("Flexcachecname missing in options on anonymous function")
         if @used_names[hash_name] and not loptions.multi
             throw new Error("Name is already in use and multi is false")
         @used_names[hash_name] = true
 
+        # prepare event emitter if set
+        if loptions.emitter
+            if typeof(loptions.emitter) == 'boolean'
+                emitter = EventEmitter
+            else if typeof(loptions.emitter) == 'function'
+                emitter = loptions.emitter
+
+
         wrapper = (wargs..., callback) =>
+            # in case no callback was defined, push it back to the arguments list
+            if typeof(callback) != 'function'
+                wargs.push(callback)
             if @options.debug > 1
                 console.log("try cache call. args:", wargs)
+
+            # calculate group and hash keys
             group_prefix = loptions.group_prefix or @options.group_prefix
             group = group_prefix + grouper(wargs...)
             hash = hash_name + "_" + hasher(wargs...)
+            # create event emitter return value
+            if emitter
+                ee = new emitter(wargs...)
+            
             @backend.get group, hash, (err, cached) =>
                 # undecodeable means non cached
                 if err or not cached
                     if @options.debug
                         console.log("cache MISS group:", group, " hash:", hash)
                     # call the masked function
-                    fn wargs..., (results...) =>
-                        if results[0] # error case
-                            return callback.apply(null, results)
-                        # cache the result
-                        opt = ttl:ttl, max_object_size:@options.max_object_size
-                        @backend.set group, hash, results, opt, (err, res) =>
-                            # don't care if succeeded
-                            if @options.debug
-                                console.log("save cache", group, hash)
-                                #console.log(wargs)
-                                #console.log(results)
-                            # call real callback function
-                            callback.apply(null, results)
+                    if emitter
+                        total_buffer = []
+                        total_size = 0
+                        over_limit = false
+                        # call the masked function.
+                        realee = fn wargs...
+                        realee.on 'data', (data) =>
+                            ee.emit 'data', data
+                            if not over_limit
+                                total_buffer.push(data)
+                                #total_size += @calculate_size(data)
+                                over_limit = total_size/2 > @options.max_object_size
+                        realee.on 'end', () =>
+                            # save result in cache
+                            #total_buffer.push(data)
+                            opt = ttl:ttl, max_object_size:@options.max_object_size
+                            @backend.set group, hash, total_buffer, opt, (err, res) =>
+                                if @options.debug
+                                    console.log("save cache", group, hash, "err:", err)
+                                ee.emit 'end'
+
+
+                    else
+                        fn wargs..., (results...) =>
+                            if results[0] # error case
+                                return callback.apply(null, results)
+                            # cache the result
+                            opt = ttl:ttl, max_object_size:@options.max_object_size
+                            @backend.set group, hash, results, opt, (err, res) =>
+                                # don't care if succeeded
+                                if @options.debug
+                                    console.log("save cache", group, hash)
+                                    #console.log(wargs)
+                                    #console.log(results)
+                                # call real callback function
+                                if not ee
+                                    callback.apply(null, results)
                     
                 else
                     if @options.debug
                         console.log("cache HIT group:", group, " hash:", hash)
                         #console.log(cached)
-                    callback.apply(null, cached)
+                    if not ee
+                        callback.apply(null, cached)
+                    else
+                        # handle event emmitter
+                        #console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%cached", cached)
+                        atest = () ->
+                            cached.length
+                        adata = (callback) ->
+                            mydata = cached.splice(0,1)
+                            console.log(mydata)
+                            ee.emit 'data', mydata
+                            setTimeout callback, 0
+                        aend = () ->
+                            ee.emit('end')
+                        async.whilst(atest, adata, aend)
+            ee or null
 
         wrapper.get_group = (args...) =>
             grouper = loptions.group or @group

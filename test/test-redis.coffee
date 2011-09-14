@@ -8,6 +8,7 @@ STRESS_RUNS = 10000
 async = require 'async'
 garbage = require 'garbage'
 inspect = require('eyes').inspector({styles: {all: 'magenta'}})
+{ EventEmitter } = require('events')
 
 `function _deepEqual(actual, expected) {
   // 7.1. All identical values are equivalent, as determined by ===.
@@ -375,8 +376,82 @@ gentests "Stress", (test, backend) ->
     for i in [0...RUNS]
         queue.push {}
     queue.drain = (err, done) ->
-        back.close()
         took = (new Date().getTime() - start)/1000
         console.log("took:", took, "s  req/sec:", RUNS/took)
-        test.done()
+        back.close(test.done)
 
+#redis = require('redis')
+#redis.debug_mode = true
+
+module.exports.TestEmmiter = (test) ->
+    back = new RedisBackend()
+    fc = new Flexcache back, debug:2
+
+    emitter_run = 0
+    class TestEmitter extends EventEmitter
+        constructor: (args...) ->
+            console.log(args)
+            @args = args
+            setTimeout(@run, 0)
+
+        run: () =>
+            emitter_run++
+            console.trace()
+            async.waterfall [
+                (next) =>
+                    @emit 'data', "emitter run: " + emitter_run
+                    setTimeout(next, 4)
+                ,
+                (next) =>
+                    @emit 'data', "\nsecond\n"
+                    setTimeout(next, 0)
+                ,
+                (next) =>
+                    @emit 'end'
+            ]
+            @
+
+        special: () =>
+            return 42
+
+    my_emitter = (args...) ->
+        ee = new TestEmitter args...
+        return ee
+
+    cached_emitter = fc.cache my_emitter,
+        name: "emit",
+        emitter: TestEmitter
+
+    cached_emitter2 = fc.cache my_emitter,
+        name: "emit2",
+        emitter: true
+
+    rvp = cached_emitter2(1, "test2")
+    test.ok(rvp instanceof EventEmitter, "not event emitter")
+
+    rv1 = cached_emitter(1, "test2")
+    test.ok(rv1 instanceof TestEmitter, "not test emitter")
+    cached_emitter.clear_group 1, () ->
+        async.waterfall [
+            (next) ->
+                rv1 = cached_emitter(1, "test2")
+                test.ok(rv1 instanceof TestEmitter, "not test emitter")
+                rv1.on 'data', (data) ->
+                    console.log("got data:", data)
+                rv1.on 'end', () ->
+                    console.log("end rcv, test1")
+                    next(rv1)
+            ,
+            (rv1, next) ->
+                rv2 = cached_emitter(1, "test2")
+                test.ok(rv2 instanceof TestEmitter, "not event emitter")
+                should_results = [ 'emitter run: 5', '\nsecond\n' ]
+                rv2.on 'data', (data) ->
+                    test.equal(data, should_results.splice(0,1), "results differ")
+                    console.log("got data", data)
+                rv2.on 'end', () ->
+                    console.log("end rcv, test2")
+                    next()
+            ], () ->
+                back.close()
+                test.done()
