@@ -2,10 +2,8 @@
 { RedisBackend } = require("../backend/redis")
 { MemoryBackend } = require("../backend/memory")
 
-
 TEST_BACKENDS = [RedisBackend, MemoryBackend]
 STRESS_RUNS = 10000
-
 
 async = require 'async'
 garbage = require 'garbage'
@@ -97,7 +95,6 @@ function objEquiv(a, b) {
   return true;
 }
 `
-
 gentests = (name, fnc) ->
     for backend in TEST_BACKENDS
         wrapper = (test) ->
@@ -106,6 +103,7 @@ gentests = (name, fnc) ->
         wrapper.name = dname
         module.exports[dname] = wrapper
 
+noop = () ->
 
 
 gentests "TestConsistancy", (test, backend) ->
@@ -131,17 +129,19 @@ gentests "TestConsistancy", (test, backend) ->
         , 10)
 
 
-    fast = fc.cache slow
+    fast = fc.cache slow, {name:"slow"}
     fast_prefix = fc.cache slow,
-        prefix: "X_"
+        name: "slow2"
     safe = fc.cache slow,
         hash: fc.safe_hasher_all
+        name: "slow3"
 
     fc.clear_group fc.get_group(100)
     fc.clear_group fc.get_group(99)
     series = [
         (next) ->
             slow 100, got_res next
+        ,
         (next) ->
             fast 100, got_res (err) ->
                 test.equal(run, 2, "cache was hit 1")
@@ -229,6 +229,7 @@ gentests "TestConsistancy", (test, backend) ->
         back.close()
         test.done()
 
+
 module.exports.StressBson = (test) ->
     test.done()
     return
@@ -240,27 +241,54 @@ module.exports.StressBson = (test) ->
     test.done()
 
 module.exports.TestHashes = (test) ->
-    back = new RedisBackend()
-    fc = new Flexcache back, ttl:400000
-    cached = fc.cache () ->
-
     found_keys = {}
-    found_hashes = {}
+    fc = new Flexcache true
+    hasher = null
+    for hasher in [fc.safe_hasher_all, fc.hasher_all]
+        found_keys = {}
+        
+        unique = (value) ->
+            test.equal(found_keys[value], undefined, "hash was already found: " + value)
+            found_keys[value] = true
+        
+        for i in [0...100]
+            unique(hasher(i, null, ["bla"], {a:"b"}, new Buffer([0,1])))
 
-    for i in [0...50000]
-        nk = cached.get_group(i, null, ["bla"], {a:"b"}, new Buffer([0,1]))
-        nh = cached.get_hash(null, ["bla"], {a:"b", b:i}, new Buffer([0,1]))
+        for i in [0...100]
+            unique(hasher(i))
+        for i in [0...100]
+            unique(hasher(0, i))
+        for i in [0...100]
+            unique(hasher(null, i))
 
 
-        test.equal(found_keys[nk], undefined, "key was already found")
-        test.equal(found_hashes[nk], undefined, "hash was already found")
-        found_keys[nk] = true
-        found_hashes[nh] = true
+    for hasher in [fc.safe_hasher_one, fc.hasher_one]
+        found_keys = {}
+        
+        unique = (value) ->
+            test.equal(found_keys[value], undefined, "hash was already found")
+            found_keys[value] = true
+        
+        for i in [0...100]
+            unique hasher(i, null, ["bla"], {a:"b"}, new Buffer([0,1]))
+        unique hasher "one", 1
+        for i in [0...100]
+            test.ok(found_keys[hasher("one", i)], "key should be cached: " + hasher)
+    test.done()
+
+module.exports.TestAPI = (test) ->
+    back = new MemoryBackend()
+    fc = new Flexcache back
+    test_flex = () ->
+        new Flexcache()
+    test.throws(test_flex, Error, "not without backend")
+
+    test_noname = () ->
+        fc.cache(noop)
+    test.throws(test_noname, Error, "name missing on anonymous function")
 
     back.close()
     test.done()
-        
-
 
 gentests "Stress", (test, backend) ->
 
@@ -301,7 +329,7 @@ gentests "Stress", (test, backend) ->
         , 0)
 
 
-    fast = fc.cache slow
+    fast = fc.cache slow, name:"slow"
 
     start = new Date().getTime()
 
@@ -317,7 +345,6 @@ gentests "Stress", (test, backend) ->
             check2 = (err, second_rv...) ->
                 test.ok(second_rv)
                 if not _deepEqual(second_rv, first_rv)
-                    console.log("#############################################################################################################")
                     console.log("args:", args)
                     console.log("hash group:")
                     inspect(fast.get_group.apply(null, args))
@@ -346,5 +373,4 @@ gentests "Stress", (test, backend) ->
         took = (new Date().getTime() - start)/1000
         console.log("took:", took, "s  req/sec:", RUNS/took)
         test.done()
-
 

@@ -143,7 +143,7 @@ rcached.clear(fc.get_group("my", "arguments", 2, 4, {1:3}))
   - `group` *function* to generate the hash or string of *'all'*, *'one'*, *'safe_one'*, *'safe_all'*. default: **hash\_one**
   - `hash` same as hash. default: **safe\_all**
   - `ttl` timeout in seconds.
-  - `group_prefix` prefix added before the group hash
+  - `group\_prefix` prefix added before the group hash
   - `debug` 
 
 ## get\_group(args...)
