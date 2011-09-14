@@ -62,7 +62,7 @@ class Flexcache
         return @hash.apply(null, args)
 
     clear_group: (group, cb) =>
-@backend.clear_group group, cb
+        @backend.clear_group group, cb
 
     clear_hash: (group, hash, cb) =>
         @backend.clear_hash group, hash, cb
