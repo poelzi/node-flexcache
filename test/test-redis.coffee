@@ -2,6 +2,11 @@
 { RedisBackend } = require("../backend/redis")
 { MemoryBackend } = require("../backend/memory")
 
+
+TEST_BACKENDS = [RedisBackend, MemoryBackend]
+STRESS_RUNS = 10000
+
+
 async = require 'async'
 garbage = require 'garbage'
 inspect = require('eyes').inspector({styles: {all: 'magenta'}})
@@ -92,9 +97,22 @@ function objEquiv(a, b) {
   return true;
 }
 `
-module.exports.TestRedis = (test) ->
 
-    back = new MemoryBackend() #RedisBackend()
+gentests = (name, fnc) ->
+    for backend in TEST_BACKENDS
+        wrapper = (test) ->
+            fnc(test, backend)
+        dname = name + backend.name
+        wrapper.name = dname
+        module.exports[dname] = wrapper
+
+
+
+gentests "TestConsistancy", (test, backend) ->
+
+    console.log("test backend", backend.name)
+
+    back = new backend() #RedisBackend()
     fc = new Flexcache back, ttl:400000, debug:2
 
     todo = 0 # calculated 
@@ -244,12 +262,12 @@ module.exports.TestHashes = (test) ->
         
 
 
-module.exports.StressRedis = (test) ->
+gentests "Stress", (test, backend) ->
 
-    RUNS = 10000
+    RUNS = STRESS_RUNS
 
     run = () ->
-    back = new RedisBackend()
+    back = new backend()
     options =
         ttl:100 * 1000 # 100 secs should be enough
         key: () ->
