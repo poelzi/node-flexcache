@@ -1,4 +1,10 @@
+###
+Flexcache
 
+Copyright (c) 2011 Daniel Poelzleithner
+
+BSD License
+###
 
 redis = require 'redis'
 buffalo = require 'buffalo'
@@ -12,7 +18,7 @@ class Flexcache
     constructor: (@backend, options, callback) ->
         # set default hasher
         @options = options or {}
-        @options.key_prefix ?= "fc_"
+        @options.group_prefix ?= "fc_"
         dset = (name, target, def) =>
             switch @options[name]
                 when 'all' then @[target] = @hasher_all
@@ -25,7 +31,7 @@ class Flexcache
                     else
                         @[target] = def or @hasher_one
         dset("hash", "hash", @safe_hasher_all)
-        dset("key", "key")
+        dset("group", "group")
 
     hasher_one: (x) ->
         return hashlib.sha256(JSON.stringify(x))
@@ -34,11 +40,8 @@ class Flexcache
         rv = ""
         if @options.prefix
             rv += @options.prefix
-        for arg in args
-            if rv
-                rv += "|"
-            rv += JSON.stringify(arg)
-        return hashlib.sha256(rv)
+        rv += hashlib.sha256(JSON.stringify(arg))
+        return rv
 
     safe_hasher_one: (x) =>
         return hashlib.sha256(buffalo.serialize([x]))
@@ -52,43 +55,43 @@ class Flexcache
         #console.log("result", rv)
         return rv
 
-    get_key: (args...) =>
-        return @options.key_prefix + @key.apply(null, args)
+    get_group: (args...) =>
+        return @options.group_prefix + @group.apply(null, args)
          
     get_hash: (args...) =>
         return @hash.apply(null, args)
 
-    clear: (key, cb) =>
-        @backend.clear key, cb
+    clear_group: (group, cb) =>
+@backend.clear_group group, cb
 
-    clear_subkey: (key, subkey, cb) =>
-        @backend.clear_subkey key, subkey, cb
+    clear_hash: (group, hash, cb) =>
+        @backend.clear_hash group, hash, cb
 
     cache: (fn, loptions = {}) =>
         hasher = loptions.hash or @hash
-        keyer = loptions.key or @key
+        grouper = loptions.group or @group
         ttl = loptions.ttl or @options.ttl
 
         wrapper = (wargs..., callback) =>
             if @options.debug > 1
                 console.log("try cache call. args:", wargs)
-            key_prefix = loptions.key_prefix or @options.key_prefix
-            key = key_prefix + keyer(wargs...)
-            subkey = hasher(wargs...)
-            @backend.get key, subkey, (err, cached) =>
+            group_prefix = loptions.group_prefix or @options.group_prefix
+            group = group_prefix + grouper(wargs...)
+            hash = hasher(wargs...)
+            @backend.get group, hash, (err, cached) =>
                 # undecodeable means non cached
                 if err or not cached
                     if @options.debug
-                        console.log("cache MISS key:", key, " subkey:", subkey)
+                        console.log("cache MISS group:", group, " hash:", hash)
                     # call the masked function
                     fn wargs..., (results...) =>
                         if results[0] # error case
                             return callback.apply(null, results)
                         # cache the result
-                        @backend.set key, subkey, ttl, results, (err, res) =>
+                        @backend.set group, hash, ttl, results, (err, res) =>
                             # don't care if succeeded
                             if @options.debug
-                                console.log("save cache", key, subkey)
+                                console.log("save cache", group, hash)
                                 #console.log(wargs)
                                 #console.log(results)
                             # call real callback function
@@ -96,35 +99,35 @@ class Flexcache
                     
                 else
                     if @options.debug
-                        console.log("cache HIT key:", key, " subkey:", subkey)
+                        console.log("cache HIT group:", group, " hash:", hash)
                         #console.log(cached)
                     callback.apply(null, cached)
 
-        wrapper.get_key = (args...) =>
-            keyer = loptions.key or @key
+        wrapper.get_group = (args...) =>
+            grouper = loptions.group or @group
             hasher = loptions.hash or @hash
-            key_prefix = loptions.key_prefix or @options.key_prefix
-            return key_prefix + keyer.apply(null, args)
+            group_prefix = loptions.group_prefix or @options.group_prefix
+            return group_prefix + grouper.apply(null, args)
 
-        wrapper.get_subkey = (args...) =>
+        wrapper.get_hash = (args...) =>
             hasher = loptions.hash or @hash
             return hasher.apply(null, args)
 
-        wrapper.clear = (args...) =>
+        wrapper.clear_group = (args...) =>
             callback = args.pop()
-            keyer = loptions.key or @key
-            key_prefix = loptions.key_prefix or @options.key_prefix
-            @clear key_prefix + keyer.apply(null, args), callback # calculate the key like normal parameters
+            grouper = loptions.group or @group
+            group_prefix = loptions.group_prefix or @options.group_prefix
+            @clear_group group_prefix + grouper.apply(null, args), callback # calculate the key like normal parameters
 
-        wrapper.clear_subkey = (args...) =>
+        wrapper.clear_hash = (args...) =>
             callback = args.pop()
-            keyer = loptions.key or @key
-            key_prefix = loptions.key_prefix or @options.key_prefix
+            grouper = loptions.group or @group
+            group_prefix = loptions.group_prefix or @options.group_prefix
             hasher = loptions.hash or @hash
-            x = keyer.apply(null, args)
+            x = grouper.apply(null, args)
             if @options.debug >= 2
-                console.log("clear :", key_prefix + keyer.apply(null, args), hasher.apply(null, args))
-            @clear_subkey key_prefix + keyer.apply(null, args), hasher.apply(null, args), callback # calculate the key like normal parameters
+                console.log("clear :", group_prefix + grouper.apply(null, args), hasher.apply(null, args))
+            @clear_hash group_prefix + grouper.apply(null, args), hasher.apply(null, args), callback # calculate the key like normal parameters
 
         return wrapper
 

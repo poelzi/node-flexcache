@@ -29,19 +29,19 @@ class MemoryBackend extends Backend
 
         @_call(fn, null, null)
 
-    clear: (key, fn) =>
-        delete @cache[key]
+    clear_group: (group, fn) =>
+        delete @cache[group]
         fn and @_call(fn, null, null)
 
-    clear_subkey: (key, subkey, fn) =>
-        delete @cache[key][subkey] if @cache[key]
+    clear_hash: (group, hash, fn) =>
+        delete @cache[group][hash] if @cache[group]
         fn and @_call(fn, null, null)
-
-    dbsize: (fn) =>
-        @client.dbsize(fn)
 
     clear_all: (fn) =>
         @cache = {}
+
+    dbsize: (fn) =>
+        @_call(fn, null, 0)
 
     close: (fn) =>
         fn and @_call(fn, null, null)

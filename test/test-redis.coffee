@@ -119,8 +119,8 @@ module.exports.TestRedis = (test) ->
     safe = fc.cache slow,
         hash: fc.safe_hasher_all
 
-    fc.clear fc.get_key(100)
-    fc.clear fc.get_key(99)
+    fc.clear_group fc.get_group(100)
+    fc.clear_group fc.get_group(99)
     series = [
         (next) ->
             slow 100, got_res next
@@ -137,7 +137,7 @@ module.exports.TestRedis = (test) ->
         ,
         (next) ->
             # clear the cache
-            fast.clear 100, next
+            fast.clear_group 100, next
         ,
         (next) ->
             fast 100, got_res (err, waited, run) ->
@@ -162,7 +162,7 @@ module.exports.TestRedis = (test) ->
         ,
         (next) ->
             # clear the cache
-            fast.clear_subkey 99, 1, next
+            fast.clear_hash 99, 1, next
         ,
         (next) ->
             fast 99, 2, got_res (err, waited, run) ->
@@ -191,7 +191,7 @@ module.exports.TestRedis = (test) ->
         ,
         (next) ->
             # clear the cache
-            fast.clear 99, next
+            fast.clear_group 99, next
         ,
         (next) ->
             safe 99, new Buffer([1,2]), got_res (err, waited, run) ->
@@ -230,8 +230,8 @@ module.exports.TestHashes = (test) ->
     found_hashes = {}
 
     for i in [0...50000]
-        nk = cached.get_key(i, null, ["bla"], {a:"b"}, new Buffer([0,1]))
-        nh = cached.get_subkey(null, ["bla"], {a:"b", b:i}, new Buffer([0,1]))
+        nk = cached.get_group(i, null, ["bla"], {a:"b"}, new Buffer([0,1]))
+        nh = cached.get_hash(null, ["bla"], {a:"b", b:i}, new Buffer([0,1]))
 
 
         test.equal(found_keys[nk], undefined, "key was already found")
@@ -301,10 +301,10 @@ module.exports.StressRedis = (test) ->
                 if not _deepEqual(second_rv, first_rv)
                     console.log("#############################################################################################################")
                     console.log("args:", args)
-                    console.log("hash key:")
-                    inspect(fast.get_key.apply(null, args))
+                    console.log("hash group:")
+                    inspect(fast.get_group.apply(null, args))
                     console.log("hash:")
-                    inspect(fast.get_subkey.apply(null, args))
+                    inspect(fast.get_hash.apply(null, args))
                     console.log("diff detected:")
                     console.log("is:", second_rv)
                     console.log("should:", first_rv)

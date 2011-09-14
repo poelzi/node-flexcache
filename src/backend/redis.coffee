@@ -40,21 +40,21 @@ class RedisBackend extends Backend
 
 
         
-    get: (key, subkey, fn) =>
-        this.client.hget key, subkey, (err, data) =>
+    get: (group, hash, fn) =>
+        this.client.hget group, hash, (err, data) =>
             if err or not data
                 return fn(err, null)
             try
                 x = buffalo.parse(new Buffer(data))
                 decoded = quack(buffalo.parse(new Buffer(data)))
             catch e
-                console.log("err decoding blob" + e)
+                console.log("err decoding blob " + e)
                 decoded = null
             if not decoded
                 return fn()
             fn null, decoded
 
-    set: (key, subkey, ttl, data, fn) =>
+    set: (group, hash, ttl, data, fn) =>
         fn = fn
         try
             if ttl == -1
@@ -64,17 +64,17 @@ class RedisBackend extends Backend
             rdata = buffalo.serialize(data)
             async.waterfall [
                 (next) =>
-                    @client.ttl key, (err, res) =>
+                    @client.ttl group, (err, res) =>
                         next(null, res > 0 and res or rttl)
                 ,
                 (oldttl, next) =>
-                    @client.hset key, subkey, rdata, (err, res) ->
+                    @client.hset group, hash, rdata, (err, res) ->
                         next(err, oldttl, res)
                 ,
                 (oldttl, res, next) =>
                     if @ttl_bug
                         return next(null, null)
-                    @client.expire key, oldttl, (err, res) ->
+                    @client.expire group, oldttl, (err, res) ->
                         next(null, null)
 
             ], (err) ->
@@ -84,19 +84,19 @@ class RedisBackend extends Backend
         catch err
             fn and fn(err, null)
 
-    clear: (key, fn) =>
-        @client.del key, (err, res) ->
+    clear_group: (group, fn) =>
+        @client.del group, (err, res) ->
             fn and fn(null, null)
 
-    clear_subkey: (key, subkey, fn) =>
-        @client.hdel key, subkey, (err, res) ->
+    clear_hash: (group, hash, fn) =>
+        @client.hdel group, hash, (err, res) ->
             fn(null, null)
-
-    dbsize: (fn) =>
-        @client.dbsize(fn)
 
     clear_all: (fn) =>
         @client.flushdb(fn)
+
+    dbsize: (fn) =>
+        @client.dbsize(fn)
 
     close: (fn) =>
         @client.quit(fn)
