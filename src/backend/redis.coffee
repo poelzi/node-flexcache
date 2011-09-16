@@ -40,7 +40,7 @@ class RedisBackend extends Backend
 
 
         
-    get: (group, hash, fn) =>
+    get: (group, hash, options, fn) =>
         this.client.hget group, hash, (err, data) =>
             if err or not data
                 return fn(err, null)

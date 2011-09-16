@@ -15,7 +15,7 @@ class MemoryBackend extends Backend
         else
             fn.apply(null, args)
 
-    get: (key, subkey, fn) =>
+    get: (key, subkey, options, fn) =>
         if @cache[key]?[subkey]
             @_call(fn, null, @cache[key][subkey])
         else
