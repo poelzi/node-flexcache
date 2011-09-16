@@ -137,6 +137,8 @@ class Flexcache
                         over_limit = false
                         # call the masked function.
                         realee = fn wargs...
+                        if @options.debug >= 3
+                            console.log("real function returned:", realee)
                         realee.on 'data', (data) =>
                             ee.emit 'data', data
                             if not over_limit
@@ -149,12 +151,16 @@ class Flexcache
                             opt = ttl:ttl, max_object_size:@options.max_object_size, debug_serializer:@options.debug_serializer
                             @backend.set group, hash, total_buffer, opt, (err, res) =>
                                 if @options.debug
-                                    console.log("save cache", group, hash, "err:", err)
+                                    console.log("flexcache save cache:", group, hash, "err:", err)
+                                    if @options.debug >= 3
+                                        console.log("flexcache data:")
+                                        console.log(total_buffer)
                                 ee.emit 'end'
 
 
                     else
                         fn wargs..., (results...) =>
+                            # we save the result as it is, and therefore the error argument as well
                             if results[0] # error case
                                 return callback.apply(null, results)
                             # cache the result
