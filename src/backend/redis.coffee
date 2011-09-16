@@ -64,6 +64,14 @@ class RedisBackend extends Backend
             else
                 rttl = ttl/1000 or 6*60*60
             rdata = buffalo.serialize(data)
+            if options.debug_serializer
+                try
+                    buffalo.parse(rdata)
+                catch e
+                    console.error("Flexcache: failed decoding serialized data:", e)
+                    console.log(data)
+                    console.log(rdata)
+                    return fn("invalid encoding", null)
             if max_size and rdata.length > max_size
                 return fn("to large", null)
             async.waterfall [

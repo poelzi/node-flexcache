@@ -119,7 +119,8 @@ class Flexcache
             if emitter
                 ee = new emitter(wargs...)
             
-            @backend.get group, hash, (err, cached) =>
+            opt = { serializer: loptions.serializer or @options.serializer}
+            @backend.get group, hash, opt, (err, cached) =>
                 # undecodeable means non cached
                 if err or not cached
                     if @options.debug
@@ -140,7 +141,7 @@ class Flexcache
                         realee.on 'end', () =>
                             # save result in cache
                             #total_buffer.push(data)
-                            opt = ttl:ttl, max_object_size:@options.max_object_size
+                            opt = ttl:ttl, max_object_size:@options.max_object_size, debug_serializer:@options.debug_serializer
                             @backend.set group, hash, total_buffer, opt, (err, res) =>
                                 if @options.debug
                                     console.log("save cache", group, hash, "err:", err)

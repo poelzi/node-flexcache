@@ -154,7 +154,8 @@ rcached.clear(fc.get_group("my", "arguments", 2, 4, {1:3}))
   - `hash` same as hash. default: **safe\_all**
   - `ttl` timeout in seconds.
   - `group\_prefix` prefix added before the group hash
-  - `debug` 
+  - `debug` integer debug level
+  - `debug\_serializer` try to decode data right after serializing it and print error in case of failure 
 
 ## get\_group(args...)
 
