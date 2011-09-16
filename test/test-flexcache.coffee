@@ -383,8 +383,8 @@ gentests "Stress", (test, backend) ->
 #redis = require('redis')
 #redis.debug_mode = true
 
-module.exports.TestEmmiter = (test) ->
-    back = new RedisBackend()
+gentests "EventEmitter", (test, backend) ->
+    back = new backend()
     fc = new Flexcache back, debug:2
 
     emitter_run = 0
@@ -396,7 +396,6 @@ module.exports.TestEmmiter = (test) ->
 
         run: () =>
             emitter_run++
-            console.trace()
             async.waterfall [
                 (next) =>
                     @emit 'data', "emitter run: " + emitter_run
@@ -404,6 +403,14 @@ module.exports.TestEmmiter = (test) ->
                 ,
                 (next) =>
                     @emit 'data', "\nsecond\n"
+                    setTimeout(next, 0)
+                ,
+                (next) =>
+                    @emit 'data', new Buffer([01,00,02,0xff,00])
+                    setTimeout(next, 0)
+                ,
+                (next) =>
+                    @emit 'data', 23
                     setTimeout(next, 0)
                 ,
                 (next) =>
@@ -445,7 +452,7 @@ module.exports.TestEmmiter = (test) ->
             (rv1, next) ->
                 rv2 = cached_emitter(1, "test2")
                 test.ok(rv2 instanceof TestEmitter, "not event emitter")
-                should_results = [ 'emitter run: 5', '\nsecond\n' ]
+                should_results = [ 'emitter run: 5', '\nsecond\n', new Buffer([01,00,02,0xff,00]), 23]
                 rv2.on 'data', (data) ->
                     test.equal(data, should_results.splice(0,1), "results differ")
                     console.log("got data", data)

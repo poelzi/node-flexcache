@@ -111,6 +111,7 @@ class Flexcache
             # in case no callback was defined, push it back to the arguments list
             if typeof(callback) != 'function'
                 wargs.push(callback)
+                callback = undefined
             if @options.debug > 1
                 console.log("try cache call. args:", wargs)
 
@@ -120,12 +121,13 @@ class Flexcache
             hash = hash_name + "_" + hasher(wargs...)
             # create event emitter return value
             if emitter
-                ee = new emitter(wargs...)
+                ee = new emitter wargs..., callback
             
             opt = { serializer: loptions.serializer or @options.serializer}
             @backend.get group, hash, opt, (err, cached) =>
                 # undecodeable means non cached
                 if err or not cached
+                    # MISS
                     if @options.debug
                         console.log("cache MISS group:", group, " hash:", hash)
                     # call the masked function
@@ -164,24 +166,29 @@ class Flexcache
                                     #console.log(wargs)
                                     #console.log(results)
                                 # call real callback function
-                                if not ee
+                                if callback
                                     callback.apply(null, results)
                     
                 else
+                    # HIT
                     if @options.debug
-                        console.log("cache HIT group:", group, " hash:", hash)
+                        console.log("flexcache HIT group:", group, " hash:", hash)
+                        if @options.debug >= 3
+                            console.log("data:")
+                            console.log(cached)
+                            console.log("####")
                         #console.log(cached)
-                    if not ee
-                        callback.apply(null, cached)
+                    if not emitter
+                        if callback
+                            callback.apply(null, cached)
                     else
                         # handle event emmitter
-                        #console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%cached", cached)
                         atest = () ->
                             cached.length
                         adata = (callback) ->
                             mydata = cached.splice(0,1)
-                            console.log(mydata)
-                            ee.emit 'data', mydata
+                            #console.log(mydata)
+                            ee.emit 'data', mydata[0]
                             setTimeout callback, 0
                         aend = () ->
                             ee.emit('end')
