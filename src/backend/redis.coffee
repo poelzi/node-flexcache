@@ -62,7 +62,7 @@ class RedisBackend extends Backend
             if ttl == -1
                 rttl = -1
             else
-                rttl = ttl/1000 or 6*60*60
+                rttl = ttl or 6*60*60
             rdata = buffalo.serialize(data)
             if options.debug_serializer
                 try

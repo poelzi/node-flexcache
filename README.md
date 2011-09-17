@@ -91,7 +91,7 @@ RedisBackend = require('flexcache/backend/redis').RedisBackend
 Flexcache = require('flexcache').Flexcache
 
 backend = new RedisBackend()
-fc = new Flexcache(backend, { ttl:400000 }) // 400 second timeout
+fc = new Flexcache(backend, { ttl:400 }) // 400 second timeout
 
 slow = function(a, b, callback) { /* do something slow */ return a*b; }
 
@@ -131,7 +131,7 @@ backend = new RedisBackend({port:1234})
 fc = new Flexcache(backend, {
     group: function() { return arguments.1 },
     hash: function() { return "X" + arguments.0 },
-    ttl: 60*1000,
+    ttl: 300, // 5 minutes
     group_name: "grp1",
     max_object_size: 1 * 1024 // 1 kbyte
     });
@@ -208,7 +208,7 @@ You can also pass the same arguments as the normal function and let the key and 
 
 ### Notes
 
-  - TTL is rounded to seconds.
+  - Very fast, ligth memory usage, prefered backend
   - TTL only works with Redis 2.1.3+
 
 
@@ -220,4 +220,9 @@ You can also pass the same arguments as the normal function and let the key and 
   - `pass` Password for Redis authentication
   - ...    Remaining options passed to the redis `createClient()` method.
 
+## MemoryBackend
 
+### Notes
+
+  - No TTL support yet. Backend should be used only for one request or cleared periodicly.
+  - More for tests then usage. Consider yourself warned ;-)

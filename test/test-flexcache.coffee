@@ -112,7 +112,7 @@ gentests "TestConsistancy", (test, backend) ->
     console.log("test backend", backend.name)
 
     back = new backend() #RedisBackend()
-    fc = new Flexcache back, ttl:400000, debug:2
+    fc = new Flexcache back, ttl:400, debug:2
 
     todo = 0 # calculated 
     got_res = (fnc) ->
@@ -304,7 +304,7 @@ gentests "Stress", (test, backend) ->
     run = () ->
     back = new backend()
     options =
-        ttl:100 * 1000 # 100 secs should be enough
+        ttl:100 # 100 secs should be enough
         key: () ->
             return "stress"
         debug: false
