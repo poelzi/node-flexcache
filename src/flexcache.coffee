@@ -10,7 +10,6 @@ redis = require 'redis'
 buffalo = require 'buffalo'
 async = require 'async'
 quack = require 'quack-array'
-hexy = require('hexy').hexy
 hashlib = require('hashlib')
 assert = require('assert')
 { EventEmitter } = require('events')
