@@ -147,13 +147,16 @@ class Flexcache
                         realee.on 'end', () =>
                             # save result in cache
                             #total_buffer.push(data)
-                            opt = ttl:ttl, max_object_size:@options.max_object_size, debug_serializer:@options.debug_serializer
-                            @backend.set group, hash, total_buffer, opt, (err, res) =>
-                                if @options.debug
-                                    console.log("flexcache save cache:", group, hash, "err:", err)
-                                    if @options.debug >= 3
-                                        console.log("flexcache data:")
-                                        console.log(total_buffer)
+                            if ttl > -2
+                                opt = ttl:ttl, max_object_size:@options.max_object_size, debug_serializer:@options.debug_serializer
+                                @backend.set group, hash, total_buffer, opt, (err, res) =>
+                                    if @options.debug
+                                        console.log("flexcache save cache:", group, hash, "err:", err)
+                                        if @options.debug >= 3
+                                            console.log("flexcache data:")
+                                            console.log(total_buffer)
+                                    ee.emit 'end'
+                            else
                                 ee.emit 'end'
 
 
@@ -163,16 +166,20 @@ class Flexcache
                             if results[0] # error case
                                 return callback.apply(null, results)
                             # cache the result
-                            opt = ttl:ttl, max_object_size:@options.max_object_size
-                            @backend.set group, hash, results, opt, (err, res) =>
-                                # don't care if succeeded
-                                if @options.debug
-                                    console.log("save cache", group, hash)
-                                    #console.log(wargs)
-                                    #console.log(results)
-                                # call real callback function
-                                if callback
-                                    callback.apply(null, results)
+                            if ttl > -2
+                                opt = ttl:ttl, max_object_size:@options.max_object_size
+                                @backend.set group, hash, results, opt, (err, res) =>
+                                    # don't care if succeeded
+                                    if @options.debug
+                                        console.log("save cache", group, hash)
+                                        #console.log(wargs)
+                                        #console.log(results)
+                                    # call real callback function
+                                    if callback
+                                        callback.apply(null, results)
+                            else
+                                # no saving cache
+                                callback.apply(null, results) if callback
                     
                 else
                     # HIT

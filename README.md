@@ -152,7 +152,7 @@ rcached.clear(fc.get_group("my", "arguments", 2, 4, {1:3}))
 
   - `group` *function* to generate the hash or string of *'all'*, *'one'*, *'safe_one'*, *'safe_all'*. default: **hash\_one**
   - `hash` same as hash. default: **safe\_all**
-  - `ttl` timeout in seconds.
+  - `ttl` timeout in seconds. -1 = no timeout, -2 = no saving
   - `group\_prefix` prefix added before the group hash
   - `debug` integer debug level
   - `debug\_serializer` try to decode data right after serializing it and print error in case of failure 
