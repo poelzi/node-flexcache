@@ -1,1 +1,1 @@
-module.exports = require('../build/default/backend/backend.js')
+module.exports = require('../build/default/backend/base.js')
