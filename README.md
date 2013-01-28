@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/poelzi/node-flexcache.png)](http://travis-ci.org/poelzi/node-flexcache)
 flexcache
 =======
 
