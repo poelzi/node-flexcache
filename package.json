@@ -17,8 +17,7 @@
     "buffalo":       "0.1.x",
     "quack-array":   "0.0.x",
     "redis":         "0.6.x",
-    "async":         "0.1.x",
-    "hashlib":       "https://github.com/poelzi/hashlib/tarball/master"
+    "async":         "0.1.x"
 }
 , "devDependencies": {
     "garbage": "0.0.0",

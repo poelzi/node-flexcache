@@ -10,11 +10,14 @@ redis = require 'redis'
 buffalo = require 'buffalo'
 async = require 'async'
 quack = require 'quack-array'
-hashlib = require('hashlib')
+crypto = require 'crypto'
 assert = require('assert')
 { EventEmitter } = require('events')
+sha256 = (data) ->
+    hash = crypto.createHash('sha256')
+    hash.update(data)
+    hash.digest('hex')
 
-  
 class Flexcache
     constructor: (@backend, options, callback) ->
         # set default hasher
@@ -45,10 +48,10 @@ class Flexcache
         return JSON.stringify(args)
 
     safe_hasher_one: (x) =>
-        return hashlib.sha256(buffalo.serialize([x]))
+        return sha256(buffalo.serialize([x]))
 
     safe_hasher_all: (args...) =>
-        return hashlib.sha256(buffalo.serialize(args))
+        return sha256(buffalo.serialize(args))
 
     get_group: (args...) =>
         return @options.group_prefix + @group.apply(null, args)
